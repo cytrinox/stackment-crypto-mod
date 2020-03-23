@@ -181,17 +181,21 @@ impl AlphaCert {
         panic!("tofo")
     }
     */
+}
 
-    pub fn into_ident_cert(self) -> IdentCert<Untrusted> {
+impl From<AlphaCert> for IdentCert<Untrusted> {
+    fn from(alphacert: AlphaCert) -> Self {
         IdentCert::<Untrusted> {
-            inner: Box::new(self),
+            inner: Box::new(alphacert),
             phantom: std::marker::PhantomData,
         }
     }
+}
 
-    pub fn into_device_cert(self) -> DeviceCert<Untrusted> {
+impl From<AlphaCert> for DeviceCert<Untrusted> {
+    fn from(alphacert: AlphaCert) -> Self {
         DeviceCert::<Untrusted> {
-            inner: Box::new(self),
+            inner: Box::new(alphacert),
             phantom: std::marker::PhantomData,
         }
     }

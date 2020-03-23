@@ -58,13 +58,13 @@ mod tests {
         let isec = AlphaSecret::new();
         let icert = AlphaCert::new(&isec, &isec, None);
 
-        let untrusted = icert.clone().into_ident_cert();
+        let untrusted = IdentCert::from(icert.clone());
         let trusted = untrusted.into_trusted();
 
         let dsec = AlphaSecret::new();
         let dcert = AlphaCert::new(&dsec, &isec, Some(&icert));
 
-        let dcert = dcert.into_device_cert();
+        let dcert = DeviceCert::from(dcert);
         let dcert_trusted = dcert.into_trusted(trusted.deref());
     }
 }
