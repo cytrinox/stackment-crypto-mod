@@ -24,8 +24,6 @@ use x25519_dalek as x25519;
 use rand::Rng;
 use rand::rngs::OsRng;
 
-use crate::crypto::{CertVariant, PublicVariant, SecretVariant};
-
 type Seed = [u8; SEED_LEN];
 const SEED_LEN: usize = 32;
 

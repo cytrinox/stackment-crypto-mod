@@ -19,9 +19,6 @@ use ring::{
 use snow;
 use yasna::{self, models::GeneralizedTime, models::ObjectIdentifier, Tag};
 
-use crate::crypto::{SecretVariant, PublicVariant, CertVariant};
-
-
 use crate::crypto::SignatureBytes;
 
 
