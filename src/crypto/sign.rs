@@ -24,10 +24,10 @@ pub struct SignatureBytes {
     inner: Vec<u8>,
 }
 
-impl<T: AsRef<[u8]>> From<&T> for SignatureBytes {
-    fn from(bytes: &T) -> Self {
+impl From<&[u8]> for SignatureBytes {
+    fn from(bytes: &[u8]) -> Self {
         SignatureBytes {
-            inner: Vec::from(bytes.as_ref()),
+            inner: bytes.to_owned(),
         }
     }
 }
@@ -41,14 +41,12 @@ impl AsRef<[u8]> for SignatureBytes {
 }
 
 /// Validate a sigature against a given public key and message.
-pub fn validate_signature<T>(
-    public_key: &T,
-    message: &T,
-    signature: &T,
+pub fn validate_signature(
+    public_key: &[u8],
+    message: &[u8],
+    signature: &[u8],
 ) -> Result<(), ring::error::Unspecified>
-where
-    T: AsRef<[u8]> + ?Sized,
 {
     let public_key = UnparsedPublicKey::new(&signature::ED25519, &public_key);
-    public_key.verify(message.as_ref(), signature.as_ref())
+    public_key.verify(message, signature)
 }

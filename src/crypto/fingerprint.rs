@@ -26,9 +26,9 @@ pub struct Fingerprint {
     pub inner: [u8; 32],
 }
 
-impl<T: AsRef<[u8]>> From<&T> for Fingerprint {
-    fn from(bytes: &T) -> Self {
-        let d = digest::digest(&digest::SHA256, bytes.as_ref());
+impl From<&[u8]> for Fingerprint {
+    fn from(bytes: &[u8]) -> Self {
+        let d = digest::digest(&digest::SHA256, bytes);
         let mut inner: [u8; 32] = [0; 32];
         inner.copy_from_slice(&d.as_ref()[0..32]);
         Fingerprint { inner }

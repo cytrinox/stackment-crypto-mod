@@ -86,8 +86,8 @@ impl AlphaSecret {
 }
 
 impl Secret for AlphaSecret {
-    fn sign(&self, bytes: &dyn AsRef<[u8]>) -> SignatureBytes {
-        SignatureBytes::from(&self.ed25519_keypair.sign(bytes.as_ref()))
+    fn sign(&self, bytes: &[u8]) -> SignatureBytes {
+        SignatureBytes::from(self.ed25519_keypair.sign(bytes).as_ref())
     }
 
     fn decrypt(&self, enc_bytes: &Encrypted, sender_pubkey: &dyn Public) -> Vec<u8> {
@@ -130,7 +130,7 @@ impl Secret for AlphaSecret {
         }
     }
 
-    fn encrypt(&self, plain_bytes: &dyn AsRef<[u8]>, peer_public: &dyn Public) -> Encrypted {
+    fn encrypt(&self, plain_bytes: &[u8], peer_public: &dyn Public) -> Encrypted {
         match peer_public.as_variant_ref() {
             PublicVariant::Alpha(p) => {
                 // Generate an ephemeral x25519 key
@@ -159,7 +159,7 @@ impl Secret for AlphaSecret {
                     &mut key,
                 );
                 // Encrypt data
-                let mut in_out = Vec::from(plain_bytes.as_ref());
+                let mut in_out = Vec::from(plain_bytes);
                 let mut sealing_key = aead::LessSafeKey::new(
                     aead::UnboundKey::new(&aead::CHACHA20_POLY1305, &key).expect("sealing key"),
                 );
@@ -209,10 +209,10 @@ impl Public for AlphaPublic {
         self.x25519_pubkey.as_bytes()
     }
 
-    fn verify(&self, bytes: &dyn AsRef<[u8]>, signature: &SignatureBytes) -> bool {
+    fn verify(&self, bytes: &[u8], signature: &SignatureBytes) -> bool {
         let public_key = UnparsedPublicKey::new(&signature::ED25519, self.signing_public_key());
         public_key
-            .verify(bytes.as_ref(), signature.as_ref())
+            .verify(bytes, signature.as_ref())
             .is_ok()
     }
     fn as_variant_ref(&self) -> PublicVariant<'_> {
