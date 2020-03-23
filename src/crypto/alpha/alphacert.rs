@@ -81,7 +81,7 @@ impl AlphaCert {
         let fingerprint = if let Some(issuer) = issuer {
             issuer.issuer_fingerprint()
         } else {
-            Fingerprint::from(&cert_signed_der)
+            Fingerprint::from(cert_signed_der.as_slice())
         };
 
         Self {

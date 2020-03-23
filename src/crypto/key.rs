@@ -34,7 +34,7 @@ pub trait Public {
     fn encryption_public_key(&self) -> &[u8];
 
     /// Verify raw bytes data and a signature against this public key
-    fn verify(&self, bytes: &dyn AsRef<[u8]>, signature: &SignatureBytes) -> bool;
+    fn verify(&self, bytes: &[u8], signature: &SignatureBytes) -> bool;
 
     /// Returns the concrete variant reference
     fn as_variant_ref(&self) -> PublicVariant;
@@ -43,7 +43,7 @@ pub trait Public {
 /// Trait for secret key information
 pub trait Secret {
     /// Sign raw bytes and return the signature
-    fn sign(&self, bytes: &dyn AsRef<[u8]>) -> SignatureBytes;
+    fn sign(&self, bytes: &[u8]) -> SignatureBytes;
 
     /// Decrypt raw bytes with this key and verify authenticity with `sender_pubkey`.
     fn decrypt(&self, enc_bytes: &Encrypted, sender_pubkey: &dyn Public) -> Vec<u8>;
@@ -55,7 +55,7 @@ pub trait Secret {
     /// Encrypt and sign plaintext bytes
     /// Signing requires the secret key, so this is why encrypt() is not provided
     /// by the Public trait but by the Secret trait.
-    fn encrypt(&self, plain_bytes: &dyn AsRef<[u8]>, peer_public: &dyn Public) -> Encrypted;
+    fn encrypt(&self, plain_bytes: &[u8], peer_public: &dyn Public) -> Encrypted;
 }
 
 
