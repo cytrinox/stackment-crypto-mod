@@ -35,18 +35,17 @@ pub trait Public {
 
     /// Verify raw bytes data and a signature against this public key
     fn verify(&self, bytes: &[u8], signature: &SignatureBytes) -> bool;
-
-    /// Returns the concrete variant reference
-    fn as_variant_ref(&self) -> PublicVariant;
 }
 
 /// Trait for secret key information
 pub trait Secret {
+    type PublicKey: Public;
+
     /// Sign raw bytes and return the signature
     fn sign(&self, bytes: &[u8]) -> SignatureBytes;
 
     /// Decrypt raw bytes with this key and verify authenticity with `sender_pubkey`.
-    fn decrypt(&self, enc_bytes: &Encrypted, sender_pubkey: &dyn Public) -> Vec<u8>;
+    fn decrypt(&self, enc_bytes: &Encrypted, sender_pubkey: &Self::PublicKey) -> Vec<u8>;
 
     /// Serialize the secret key into ASN.1
     /// The concrete format is up to the implementor.
@@ -55,7 +54,7 @@ pub trait Secret {
     /// Encrypt and sign plaintext bytes
     /// Signing requires the secret key, so this is why encrypt() is not provided
     /// by the Public trait but by the Secret trait.
-    fn encrypt(&self, plain_bytes: &[u8], peer_public: &dyn Public) -> Encrypted;
+    fn encrypt(&self, plain_bytes: &[u8], peer_public: &Self::PublicKey) -> Encrypted;
 }
 
 

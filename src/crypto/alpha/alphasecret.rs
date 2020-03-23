@@ -86,95 +86,89 @@ impl AlphaSecret {
 }
 
 impl Secret for AlphaSecret {
+    type PublicKey = AlphaPublic;
+
     fn sign(&self, bytes: &[u8]) -> SignatureBytes {
         self.ed25519_keypair.sign(bytes).as_ref().into()
     }
 
-    fn decrypt(&self, enc_bytes: &Encrypted, sender_pubkey: &dyn Public) -> Vec<u8> {
-        match sender_pubkey.as_variant_ref() {
-            PublicVariant::Alpha(_p) => {
-                let mut in_out = enc_bytes.data.clone();
-                let mut raw_ephemeral_pubkey = [0; 32];
-                let bytes = &enc_bytes.ephemeral_pubkey[..raw_ephemeral_pubkey.len()];
-                raw_ephemeral_pubkey.copy_from_slice(bytes);
-                let ephemeral_pub = x25519::PublicKey::from(raw_ephemeral_pubkey);
-                // DH
-                let shared_secret = self.x25519_secret.diffie_hellman(&ephemeral_pub);
+    fn decrypt(&self, enc_bytes: &Encrypted, _sender_pubkey: &AlphaPublic) -> Vec<u8> {
+        let mut in_out = enc_bytes.data.clone();
+        let mut raw_ephemeral_pubkey = [0; 32];
+        let bytes = &enc_bytes.ephemeral_pubkey[..raw_ephemeral_pubkey.len()];
+        raw_ephemeral_pubkey.copy_from_slice(bytes);
+        let ephemeral_pub = x25519::PublicKey::from(raw_ephemeral_pubkey);
+        // DH
+        let shared_secret = self.x25519_secret.diffie_hellman(&ephemeral_pub);
 
-                let salt = [0];
+        let salt = [0];
 
-                let mut kdf_input = Vec::new();
-                kdf_input.extend(shared_secret.as_bytes());
-                kdf_input.extend(ephemeral_pub.as_bytes());
-                kdf_input.extend(self.public_key().encryption_public_key());
-                let mut key = [0; 32];
-                pbkdf2::derive(
-                    pbkdf2::PBKDF2_HMAC_SHA256,
-                    std::num::NonZeroU32::new(1000).unwrap(),
-                    &salt,
-                    &kdf_input,
-                    &mut key,
-                );
+        let mut kdf_input = Vec::new();
+        kdf_input.extend(shared_secret.as_bytes());
+        kdf_input.extend(ephemeral_pub.as_bytes());
+        kdf_input.extend(self.public_key().encryption_public_key());
+        let mut key = [0; 32];
+        pbkdf2::derive(
+            pbkdf2::PBKDF2_HMAC_SHA256,
+            std::num::NonZeroU32::new(1000).unwrap(),
+            &salt,
+            &kdf_input,
+            &mut key,
+        );
 
-                let mut opening_key = aead::LessSafeKey::new(
-                    aead::UnboundKey::new(&aead::CHACHA20_POLY1305, &key).expect("opening key"),
-                );
+        let mut opening_key = aead::LessSafeKey::new(
+            aead::UnboundKey::new(&aead::CHACHA20_POLY1305, &key).expect("opening key"),
+        );
 
-                let nonce =
-                    aead::Nonce::assume_unique_for_key([0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1]);
-                let decrypted_data = opening_key
-                    .open_in_place(nonce, aead::Aad::empty(), &mut in_out)
-                    .expect("opening failed");
-                Vec::from(decrypted_data)
-            }
-        }
+        let nonce =
+            aead::Nonce::assume_unique_for_key([0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1]);
+        let decrypted_data = opening_key
+            .open_in_place(nonce, aead::Aad::empty(), &mut in_out)
+            .expect("opening failed");
+        Vec::from(decrypted_data)
     }
 
-    fn encrypt(&self, plain_bytes: &[u8], peer_public: &dyn Public) -> Encrypted {
-        match peer_public.as_variant_ref() {
-            PublicVariant::Alpha(p) => {
-                // Generate an ephemeral x25519 key
-                let ephemeral_key = x25519::EphemeralSecret::new(&mut OsRng::default());
-                let ephemeral_pub = x25519::PublicKey::from(&ephemeral_key);
-                // DH
-                let shared_secret = ephemeral_key.diffie_hellman(&p.x25519_pubkey);
-                // This is controversal:
-                // The shared_secret is always used once because of the ephemeral key.
-                // ring::derive needs a salt and in this case it should be save
-                // to put in a static salt to prevent sending an additional salt value
-                // to the receiver.
-                let salt = [0];
-                // for KDF, the RFC 7748 6.1 recommends to use the shared secret + P1 + P2
-                // as input for a KDF.
-                let mut kdf_input = Vec::new();
-                kdf_input.extend(shared_secret.as_bytes());
-                kdf_input.extend(ephemeral_pub.as_bytes());
-                kdf_input.extend(p.x25519_pubkey.as_bytes());
-                let mut key = [0; 32];
-                pbkdf2::derive(
-                    pbkdf2::PBKDF2_HMAC_SHA256,
-                    std::num::NonZeroU32::new(1000).unwrap(),
-                    &salt,
-                    &kdf_input,
-                    &mut key,
-                );
-                // Encrypt data
-                let mut in_out = Vec::from(plain_bytes);
-                let mut sealing_key = aead::LessSafeKey::new(
-                    aead::UnboundKey::new(&aead::CHACHA20_POLY1305, &key).expect("sealing key"),
-                );
-                // Because the key is used only once and this is one single encryption step,
-                // we can work with a simple nonce.
-                let nonce =
-                    aead::Nonce::assume_unique_for_key([0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1]);
-                sealing_key
-                    .seal_in_place_append_tag(nonce, aead::Aad::empty(), &mut in_out)
-                    .expect("sealing failed");
-                Encrypted {
-                    ephemeral_pubkey: Vec::from(&ephemeral_pub.as_bytes()[..]),
-                    data: in_out,
-                }
-            }
+    fn encrypt(&self, plain_bytes: &[u8], peer_public: &AlphaPublic) -> Encrypted {
+        // Generate an ephemeral x25519 key
+        let ephemeral_key = x25519::EphemeralSecret::new(&mut OsRng::default());
+        let ephemeral_pub = x25519::PublicKey::from(&ephemeral_key);
+        // DH
+        let shared_secret = ephemeral_key.diffie_hellman(&peer_public.x25519_pubkey);
+        // This is controversal:
+        // The shared_secret is always used once because of the ephemeral key.
+        // ring::derive needs a salt and in this case it should be save
+        // to put in a static salt to prevent sending an additional salt value
+        // to the receiver.
+        let salt = [0];
+        // for KDF, the RFC 7748 6.1 recommends to use the shared secret + P1 + P2
+        // as input for a KDF.
+        let mut kdf_input = Vec::new();
+        kdf_input.extend(shared_secret.as_bytes());
+        kdf_input.extend(ephemeral_pub.as_bytes());
+        kdf_input.extend(peer_public.x25519_pubkey.as_bytes());
+        let mut key = [0; 32];
+        pbkdf2::derive(
+            pbkdf2::PBKDF2_HMAC_SHA256,
+            std::num::NonZeroU32::new(1000).unwrap(),
+            &salt,
+            &kdf_input,
+            &mut key,
+        );
+        // Encrypt data
+        let mut in_out = Vec::from(plain_bytes);
+        let mut sealing_key = aead::LessSafeKey::new(
+            aead::UnboundKey::new(&aead::CHACHA20_POLY1305, &key).expect("sealing key"),
+        );
+        // Because the key is used only once and this is one single encryption step,
+        // we can work with a simple nonce.
+        let nonce =
+            aead::Nonce::assume_unique_for_key([0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1]);
+        sealing_key
+            .seal_in_place_append_tag(nonce, aead::Aad::empty(), &mut in_out)
+            .expect("sealing failed");
+        Encrypted {
+            ephemeral_pubkey: Vec::from(&ephemeral_pub.as_bytes()[..]),
+            data: in_out,
         }
     }
 
@@ -214,8 +208,5 @@ impl Public for AlphaPublic {
         public_key
             .verify(bytes, signature.as_ref())
             .is_ok()
-    }
-    fn as_variant_ref(&self) -> PublicVariant<'_> {
-        PublicVariant::Alpha(self)
     }
 }
