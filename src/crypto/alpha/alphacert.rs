@@ -93,46 +93,10 @@ impl AlphaCert {
     }
 
 
-    pub fn from_vec(bytes: &Vec<u8>) -> Self {
-        let mut raw = bytes;
-
-        let asn = yasna::parse_der(&raw, |reader| {
-            reader.read_sequence(|reader| {
-                let _version = reader.next().read_i64()?;
-
-                let cert_data = reader.next().read_der()?;
-                let cert_signature = reader.next().read_bytes()?;
-
-                yasna::parse_der(&cert_data, |reader| {
-                    reader.read_sequence(|reader| {
-                        let cert_date = reader.next().read_generalized_time()?;
-                        let sign_pubkey = reader.next().read_bytes()?;
-                        let crypt_pubkey = reader.next().read_bytes()?;
-                        // TODO: check for optional issuer
-                        unimplemented!();
-                        let issuer = reader.next().read_bytes()?;
-
-                        let mut inner: [u8; 32] = [0; 32];
-
-                        inner.copy_from_slice(&issuer[0..32]);
-
-                        Ok(Self {
-                            raw: raw.clone(),
-                            signature_pubkey: sign_pubkey,
-                            encryption_pubkey: crypt_pubkey,
-                            issuer: Fingerprint { inner },
-                        })
-                    })
-                })
-            })
-        });
-        asn.unwrap()
-    }
-
     pub fn from_stream(stream: &mut dyn Read) -> Self {
         let mut raw = Vec::new();
         stream.read_to_end(&mut raw).unwrap();
-        Self::from_vec(&raw)
+        Self::from(raw.as_slice())
     }
 
     /*
@@ -230,6 +194,42 @@ impl AlphaCert {
             inner: Box::new(self),
             phantom: std::marker::PhantomData,
         }
+    }
+}
+
+impl From<&[u8]> for AlphaCert {
+    fn from(bytes: &[u8]) -> Self {
+        let asn = yasna::parse_der(&bytes, |reader| {
+            reader.read_sequence(|reader| {
+                let _version = reader.next().read_i64()?;
+
+                let cert_data = reader.next().read_der()?;
+                let cert_signature = reader.next().read_bytes()?;
+
+                yasna::parse_der(&cert_data, |reader| {
+                    reader.read_sequence(|reader| {
+                        let cert_date = reader.next().read_generalized_time()?;
+                        let sign_pubkey = reader.next().read_bytes()?;
+                        let crypt_pubkey = reader.next().read_bytes()?;
+                        // TODO: check for optional issuer
+                        unimplemented!();
+                        let issuer = reader.next().read_bytes()?;
+
+                        let mut inner: [u8; 32] = [0; 32];
+
+                        inner.copy_from_slice(&issuer[0..32]);
+
+                        Ok(Self {
+                            raw: bytes.to_owned(),
+                            signature_pubkey: sign_pubkey,
+                            encryption_pubkey: crypt_pubkey,
+                            issuer: Fingerprint { inner },
+                        })
+                    })
+                })
+            })
+        });
+        asn.unwrap()
     }
 }
 
