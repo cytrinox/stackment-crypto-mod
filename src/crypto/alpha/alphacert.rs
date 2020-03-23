@@ -36,12 +36,6 @@ pub struct AlphaCert {
     issuer: Fingerprint,
 }
 
-impl AsRef<[u8]> for AlphaCert {
-    fn as_ref(&self) -> &[u8] {
-        &self.raw
-    }
-}
-
 impl AlphaCert {
     /// Constructs a new AlphaCert from the given secret and issuer_secret.
     /// If the `issuer` is None, this generateds a selfsigned certificate.
@@ -74,7 +68,7 @@ impl AlphaCert {
             writer.write_sequence(|writer| {
                 writer.next().write_i64(1); // Version
                 writer.next().write_der(&cert_subject_der); // cert data, subject sequence
-                writer.next().write_bytes(signature.as_ref()); // signature for cert
+                writer.next().write_bytes(signature.as_bytes()); // signature for cert
             });
         });
 
@@ -91,7 +85,6 @@ impl AlphaCert {
             issuer: fingerprint,
         }
     }
-
 
     /*
     pub fn build_cert_and_sign_dev(
@@ -273,4 +266,9 @@ impl Cert for AlphaCert {
             )
             .is_ok()
     }
+
+    fn as_bytes(&self) -> &[u8] {
+        self.raw.as_slice()
+    }
+
 }

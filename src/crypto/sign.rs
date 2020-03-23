@@ -32,11 +32,9 @@ impl From<&[u8]> for SignatureBytes {
     }
 }
 
-impl SignatureBytes {}
-
-impl AsRef<[u8]> for SignatureBytes {
-    fn as_ref(&self) -> &[u8] {
-        self.inner.as_ref()
+impl SignatureBytes {
+    pub fn as_bytes(&self) -> &[u8] {
+        self.inner.as_slice()
     }
 }
 

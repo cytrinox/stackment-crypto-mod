@@ -212,7 +212,7 @@ impl Public for AlphaPublic {
     fn verify(&self, bytes: &[u8], signature: &SignatureBytes) -> bool {
         let public_key = UnparsedPublicKey::new(&signature::ED25519, self.signing_public_key());
         public_key
-            .verify(bytes, signature.as_ref())
+            .verify(bytes, signature.as_bytes())
             .is_ok()
     }
     fn as_variant_ref(&self) -> PublicVariant<'_> {

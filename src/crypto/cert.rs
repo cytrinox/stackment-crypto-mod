@@ -26,7 +26,7 @@ use crate::crypto::{
 
 
 /// Cert trait which all Certificate variants must implement.
-pub trait Cert: AsRef<[u8]> {
+pub trait Cert {
     /// Serialize the certificate into ASN.1. The concrete format
     /// is up to the variant implementation. Each implementation must provide
     /// to re-read the serialized data back.
@@ -49,10 +49,11 @@ pub trait Cert: AsRef<[u8]> {
     /// The fingerprint is determined by using a SHA256 digest over
     /// the raw certificate bytes.
     fn fingerprint(&self) -> Fingerprint {
-        let raw = self.as_ref();
-        let d = digest::digest(&digest::SHA256, raw);
+        let d = digest::digest(&digest::SHA256, self.as_bytes());
         let mut inner: [u8; 32] = [0; 32];
         inner.copy_from_slice(&d.as_ref()[0..32]);
         Fingerprint { inner }
     }
+
+    fn as_bytes(&self) -> &[u8];
 }
