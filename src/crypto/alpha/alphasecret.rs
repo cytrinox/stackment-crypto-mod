@@ -33,7 +33,7 @@ use crate::crypto::{
     SignatureBytes, Trusted, Untrusted,
 };
 
-/// Public part of a Alpha keyring, constist of:
+/// Public part of a Alpha keyring, consists of:
 ///  * ED25519 key for signing
 ///  * X25519 key for agreement and crypto
 pub struct AlphaPublic {
@@ -41,7 +41,7 @@ pub struct AlphaPublic {
     x25519_pubkey: x25519::PublicKey,
 }
 
-/// Secret part of a Alpha keyring, constist of:
+/// Secret part of a Alpha keyring, consists of:
 ///  * ED25519 key for signing
 ///  * X25519 key for agreement and crypto
 pub struct AlphaSecret {
