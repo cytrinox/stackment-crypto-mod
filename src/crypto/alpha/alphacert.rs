@@ -93,12 +93,6 @@ impl AlphaCert {
     }
 
 
-    pub fn from_stream(stream: &mut dyn Read) -> Self {
-        let mut raw = Vec::new();
-        stream.read_to_end(&mut raw).unwrap();
-        Self::from(raw.as_slice())
-    }
-
     /*
     pub fn build_cert_and_sign_dev(
         secret: &AlphaSecret,
@@ -234,6 +228,14 @@ impl From<&[u8]> for AlphaCert {
             })
         });
         asn.unwrap()
+    }
+}
+
+impl<Stream: Read> From<&mut Stream> for AlphaCert {
+    fn from(stream: &mut Stream) -> Self {
+        let mut raw = Vec::new();
+        stream.read_to_end(&mut raw).unwrap();
+        Self::from(raw.as_slice())
     }
 }
 
