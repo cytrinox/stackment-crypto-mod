@@ -88,7 +88,7 @@ impl AlphaSecret {
 
 impl Secret for AlphaSecret {
     fn sign(&self, bytes: &dyn AsRef<[u8]>) -> SignatureBytes {
-        SignatureBytes::from(self.ed25519_keypair.sign(bytes.as_ref()))
+        SignatureBytes::from(&self.ed25519_keypair.sign(bytes.as_ref()))
     }
 
     fn decrypt(&self, enc_bytes: &Encrypted, sender_pubkey: &dyn Public) -> Vec<u8> {

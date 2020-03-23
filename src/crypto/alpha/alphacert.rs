@@ -243,7 +243,7 @@ impl Cert for AlphaCert {
         stream.write_all(&self.raw).unwrap()
     }
 
-    fn signing_public_key(&self) -> &Vec<u8> {
+    fn signing_public_key(&self) -> &[u8] {
         &self.signature_pubkey
     }
 

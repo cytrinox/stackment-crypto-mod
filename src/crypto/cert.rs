@@ -38,7 +38,7 @@ pub trait Cert: AsRef<[u8]> {
     fn issuer_fingerprint(&self) -> Fingerprint;
 
     /// Returns the raw bytes of the public signing key
-    fn signing_public_key(&self) -> &Vec<u8>;
+    fn signing_public_key(&self) -> &[u8];
 
     /// Validate the certificate againts a specific issuer certificate.
     /// The issuer can be found by using `issuer_fingerprint`, then by
