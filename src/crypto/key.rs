@@ -55,6 +55,9 @@ pub trait Secret {
     /// Signing requires the secret key, so this is why encrypt() is not provided
     /// by the Public trait but by the Secret trait.
     fn encrypt(&self, plain_bytes: &[u8], peer_public: &Self::PublicKey) -> Encrypted;
+
+    /// Returns the public key part for this secret.
+    fn public_key(&self) -> &Self::PublicKey;
 }
 
 

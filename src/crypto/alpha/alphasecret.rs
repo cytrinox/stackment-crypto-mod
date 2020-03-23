@@ -78,11 +78,6 @@ impl AlphaSecret {
             },
         }
     }
-
-    /// Returns the public key parts for this secret
-    pub fn public_key(&self) -> &AlphaPublic {
-        &self.pubkey
-    }
 }
 
 impl Secret for AlphaSecret {
@@ -191,6 +186,10 @@ impl Secret for AlphaSecret {
             });
         });
         stream.write_all(&raw_bytes).unwrap();
+    }
+
+    fn public_key(&self) -> &AlphaPublic {
+        &self.pubkey
     }
 }
 
