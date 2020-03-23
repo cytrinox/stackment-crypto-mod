@@ -13,7 +13,7 @@ use std::io::Write;
 use chrono::Utc;
 use ring::{self, signature::UnparsedPublicKey};
 use ring::{
-    aead, digest, pbkdf2, rand, signature,
+    aead, digest, pbkdf2, signature,
     signature::{Ed25519KeyPair, KeyPair, Signature},
 };
 use snow;
@@ -21,7 +21,8 @@ use yasna::{self, models::GeneralizedTime, models::ObjectIdentifier, Tag};
 
 use x25519_dalek as x25519;
 
-use rand_core::OsRng;
+use rand::Rng;
+use rand::rngs::OsRng;
 
 use crate::crypto::{CertVariant, PublicVariant, SecretVariant};
 
@@ -61,11 +62,9 @@ pub struct AlphaSecret {
 impl AlphaSecret {
     /// Construct a ne AlphaSecret with an ED25519 and X25519 keypair
     pub fn new() -> Self {
-        // TODO reduce to a single random source
-        let rng = rand::SystemRandom::new();
-        let ed25519_seed: [u8; SEED_LEN] = rand::generate(&rng).unwrap().expose();
-        let ed25519_keypair = Ed25519KeyPair::from_seed_unchecked(&ed25519_seed).unwrap();
         let mut rng = OsRng::default();
+        let ed25519_seed: [u8; SEED_LEN] = rng.gen();
+        let ed25519_keypair = Ed25519KeyPair::from_seed_unchecked(&ed25519_seed).unwrap();
         let x25519_secret = x25519::StaticSecret::new(&mut rng);
         let ed25519_pubkey = Vec::from(ed25519_keypair.public_key().as_ref());
         let x25519_pubkey = x25519::PublicKey::from(&x25519_secret);
