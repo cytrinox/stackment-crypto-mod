@@ -42,8 +42,8 @@ impl AlphaCert {
     /// TODO: Maybe add purpose flags to the certificate
     pub fn new(
         secret: &AlphaSecret,
-        issuer_secret: &AlphaSecret,
-        issuer: Option<&AlphaCert>,
+        issuer_secret: &dyn Secret,
+        issuer: Option<&dyn Cert>,
     ) -> Self {
         // TODO: fail if issuer is None and secret and issuer_secret differ!
         let ed25519_pubkey = secret.public_key().signing_public_key(); //secret.ed25519_keypair.public_key().as_ref();
