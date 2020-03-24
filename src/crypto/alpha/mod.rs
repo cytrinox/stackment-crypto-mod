@@ -8,8 +8,8 @@ mod alphacert;
 mod alphasecret;
 
 pub use alphacert::AlphaCert;
-pub use alphasecret::AlphaSecret;
-pub use alphasecret::AlphaPublic;
+pub use alphasecret::AlphaSecretKeyring;
+pub use alphasecret::AlphaPublicKeyring;
 
 
 #[cfg(test)]
@@ -19,7 +19,7 @@ mod tests {
 
     #[test]
     fn sign_and_verify() {
-        let isec: Box<dyn Secret> = Box::from(AlphaSecret::new());
+        let isec: Box<dyn SecretKeyring> = Box::from(AlphaSecretKeyring::new());
         let data = vec![0x34, 0x84, 0x23, 0x98, 0xA2];
         let sig = isec.sign(&data);
         assert_eq!(isec.public_key().verify(&data, &sig), true);
@@ -29,7 +29,7 @@ mod tests {
 
     #[test]
     fn encrypt_and_decrypt() {
-        let isec: Box<dyn Secret> = Box::from(AlphaSecret::new());
+        let isec: Box<dyn SecretKeyring> = Box::from(AlphaSecretKeyring::new());
         let plain = vec![0x34, 0x84, 0x23, 0x98, 0xA2];
         let crypted = isec.encrypt(&plain, isec.public_key());
         assert_eq!(isec.decrypt(&crypted, isec.public_key()), plain);
@@ -37,17 +37,17 @@ mod tests {
 
     #[test]
     fn save_and_restore_secret() {
-        let isec: Box<dyn Secret> = Box::from(AlphaSecret::new());
+        let isec: Box<dyn SecretKeyring> = Box::from(AlphaSecretKeyring::new());
     }
 
     #[test]
     fn will_it_blend() {
-        let isec = AlphaSecret::new();
+        let isec = AlphaSecretKeyring::new();
         let icert: Box<dyn Cert> = Box::from(AlphaCert::new(&isec, &isec, None));
 
         assert_eq!(icert.is_valid(icert.as_ref()), true);
 
-        let dsec = AlphaSecret::new();
+        let dsec = AlphaSecretKeyring::new();
         let dcert = AlphaCert::new(&dsec, &isec, Some(icert.as_ref()));
 
         assert_eq!(dcert.is_valid(icert.as_ref()), true);
@@ -55,13 +55,13 @@ mod tests {
 
     #[test]
     fn will_it_deref() {
-        let isec = AlphaSecret::new();
+        let isec = AlphaSecretKeyring::new();
         let icert = AlphaCert::new(&isec, &isec, None);
 
         let untrusted = IdentCert::from(icert.clone());
         let trusted = untrusted.into_trusted();
 
-        let dsec = AlphaSecret::new();
+        let dsec = AlphaSecretKeyring::new();
         let dcert = AlphaCert::new(&dsec, &isec, Some(&icert));
 
         let dcert = DeviceCert::from(dcert);

@@ -13,7 +13,7 @@ pub mod sign;
 
 pub use cert::Cert;
 pub use fingerprint::Fingerprint;
-pub use key::{Encrypted, Public, Secret};
+pub use key::{Encrypted, PublicKeyring, SecretKeyring};
 pub use sign::{validate_signature, SignatureBytes};
 
 use std::ops::Deref;
@@ -54,11 +54,11 @@ pub enum CertVariant<'a> {
 }
 
 pub enum SecretVariant<'a> {
-    Alpha(&'a self::alpha::AlphaSecret),
+    Alpha(&'a self::alpha::AlphaSecretKeyring),
 }
 
 pub enum PublicVariant<'a> {
-    Alpha(&'a self::alpha::AlphaPublic),
+    Alpha(&'a self::alpha::AlphaPublicKeyring),
 }
 
 pub struct Trusted;

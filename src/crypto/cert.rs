@@ -20,7 +20,7 @@ use snow;
 use yasna::{self, models::GeneralizedTime, models::ObjectIdentifier, Tag};
 
 use crate::crypto::{
-    validate_signature, DeviceCert, Fingerprint, IdentCert, Public, Secret, SignatureBytes,
+    validate_signature, DeviceCert, Fingerprint, IdentCert, PublicKeyring, SecretKeyring, SignatureBytes,
     Trusted, Untrusted,
 };
 

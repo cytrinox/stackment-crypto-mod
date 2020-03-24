@@ -26,7 +26,7 @@ use crate::crypto::SignatureBytes;
 
 
 /// Trait for public key information
-pub trait Public {
+pub trait PublicKeyring {
     /// Returns the public signing key as raw bytes
     fn signing_public_key(&self) -> &[u8];
 
@@ -41,12 +41,12 @@ pub trait Public {
 }
 
 /// Trait for secret key information
-pub trait Secret {
+pub trait SecretKeyring {
     /// Sign raw bytes and return the signature
     fn sign(&self, bytes: &[u8]) -> SignatureBytes;
 
     /// Decrypt raw bytes with this key and verify authenticity with `sender_pubkey`.
-    fn decrypt(&self, enc_bytes: &Encrypted, sender_pubkey: &dyn Public) -> Vec<u8>;
+    fn decrypt(&self, enc_bytes: &Encrypted, sender_pubkey: &dyn PublicKeyring) -> Vec<u8>;
 
     /// Serialize the secret key into ASN.1
     /// The concrete format is up to the implementor.
@@ -54,11 +54,11 @@ pub trait Secret {
 
     /// Encrypt and sign plaintext bytes
     /// Signing requires the secret key, so this is why encrypt() is not provided
-    /// by the Public trait but by the Secret trait.
-    fn encrypt(&self, plain_bytes: &[u8], peer_public: &dyn Public) -> Encrypted;
+    /// by the PublicKeyring trait but by the Secret trait.
+    fn encrypt(&self, plain_bytes: &[u8], peer_public: &dyn PublicKeyring) -> Encrypted;
 
     /// Get public key
-    fn public_key(&self) -> &dyn Public;
+    fn public_key(&self) -> &dyn PublicKeyring;
 }
 
 

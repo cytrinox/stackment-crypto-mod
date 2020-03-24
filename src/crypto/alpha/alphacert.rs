@@ -19,10 +19,10 @@ use ring::{
 use snow;
 use yasna::{self, models::GeneralizedTime, models::ObjectIdentifier, Tag};
 
-use super::alphasecret::AlphaSecret;
+use super::alphasecret::AlphaSecretKeyring;
 
 use crate::crypto::{
-    validate_signature, Cert, DeviceCert, Fingerprint, IdentCert, Public, Secret, Trusted,
+    validate_signature, Cert, DeviceCert, Fingerprint, IdentCert, PublicKeyring, SecretKeyring, Trusted,
     Untrusted,
 };
 
@@ -41,8 +41,8 @@ impl AlphaCert {
     /// If the `issuer` is None, this generateds a selfsigned certificate.
     /// TODO: Maybe add purpose flags to the certificate
     pub fn new(
-        secret: &AlphaSecret,
-        issuer_secret: &dyn Secret,
+        secret: &AlphaSecretKeyring,
+        issuer_secret: &dyn SecretKeyring,
         issuer: Option<&dyn Cert>,
     ) -> Self {
         // TODO: fail if issuer is None and secret and issuer_secret differ!
