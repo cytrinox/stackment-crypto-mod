@@ -13,7 +13,7 @@ use std::io::Write;
 use chrono::Utc;
 use ring::{self, signature::UnparsedPublicKey};
 use ring::{
-    aead, digest, pbkdf2, signature,
+    aead, digest, hkdf, pbkdf2, signature,
     signature::{Ed25519KeyPair, KeyPair, Signature},
 };
 use snow;
@@ -106,19 +106,11 @@ impl SecretKeyring for AlphaSecretKeyring {
         let mut kdf_input = Vec::new();
         kdf_input.extend(shared_secret.as_bytes());
         kdf_input.extend(ephemeral_pub.as_bytes());
-        kdf_input.extend(self.public_key().encryption_public_key());
-        let mut key = [0; 32];
-        pbkdf2::derive(
-            pbkdf2::PBKDF2_HMAC_SHA256,
-            std::num::NonZeroU32::new(1000).unwrap(),
-            &salt,
-            &kdf_input,
-            &mut key,
-        );
+        kdf_input.extend(self.public_keyring().encryption_key());
 
-        let mut opening_key = aead::LessSafeKey::new(
-            aead::UnboundKey::new(&aead::CHACHA20_POLY1305, &key).expect("opening key"),
-        );
+        let prk = hkdf::Salt::new(hkdf::HKDF_SHA256, &[]).extract(&kdf_input);
+        let key = prk.expand(&[&[]], &aead::CHACHA20_POLY1305).expect("key");
+        let mut opening_key = aead::LessSafeKey::new(key.into());
 
         let nonce = aead::Nonce::assume_unique_for_key([0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1]);
         let decrypted_data = opening_key
@@ -149,22 +141,22 @@ impl SecretKeyring for AlphaSecretKeyring {
     }
 
     /// Returns the public key parts for this secret
-    fn public_key(&self) -> &dyn PublicKeyring {
+    fn public_keyring(&self) -> &dyn PublicKeyring {
         &self.pubkey
     }
 }
 
 impl PublicKeyring for AlphaPublicKeyring {
-    fn signing_public_key(&self) -> &[u8] {
+    fn signing_key(&self) -> &[u8] {
         &self.ed25519_pubkey
     }
 
-    fn encryption_public_key(&self) -> &[u8] {
+    fn encryption_key(&self) -> &[u8] {
         self.x25519_pubkey.as_bytes()
     }
 
     fn verify(&self, bytes: &[u8], signature: &SignatureBytes) -> bool {
-        let public_key = UnparsedPublicKey::new(&signature::ED25519, self.signing_public_key());
+        let public_key = UnparsedPublicKey::new(&signature::ED25519, self.signing_key());
         public_key.verify(bytes, signature.as_bytes()).is_ok()
     }
 
@@ -185,20 +177,14 @@ impl PublicKeyring for AlphaPublicKeyring {
         let mut kdf_input = Vec::new();
         kdf_input.extend(shared_secret.as_bytes());
         kdf_input.extend(ephemeral_pub.as_bytes());
-        kdf_input.extend(self.encryption_public_key());
-        let mut key = [0; 32];
-        pbkdf2::derive(
-            pbkdf2::PBKDF2_HMAC_SHA256,
-            std::num::NonZeroU32::new(1000).unwrap(),
-            &salt,
-            &kdf_input,
-            &mut key,
-        );
+        kdf_input.extend(self.encryption_key());
+
+        let prk = hkdf::Salt::new(hkdf::HKDF_SHA256, &[]).extract(&kdf_input);
+        let key = prk.expand(&[&[]], &aead::CHACHA20_POLY1305).expect("key");
+
         // Encrypt data
         let mut in_out = Vec::from(plain_bytes);
-        let mut sealing_key = aead::LessSafeKey::new(
-            aead::UnboundKey::new(&aead::CHACHA20_POLY1305, &key).expect("sealing key"),
-        );
+        let mut sealing_key = aead::LessSafeKey::new(key.into());
         // Because the key is used only once and this is one single encryption step,
         // we can work with a simple nonce.
         let nonce = aead::Nonce::assume_unique_for_key([0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1]);

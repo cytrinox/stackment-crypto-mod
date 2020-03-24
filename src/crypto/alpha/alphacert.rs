@@ -46,8 +46,8 @@ impl AlphaCert {
         issuer: Option<&dyn Cert>,
     ) -> Self {
         // TODO: fail if issuer is None and secret and issuer_secret differ!
-        let ed25519_pubkey = secret.public_key().signing_public_key(); //secret.ed25519_keypair.public_key().as_ref();
-        let x25519_pubkey = secret.public_key().encryption_public_key(); //&secret.x25519_keypair.public;
+        let ed25519_pubkey = secret.public_keyring().signing_key(); //secret.ed25519_keypair.public_key().as_ref();
+        let x25519_pubkey = secret.public_keyring().encryption_key(); //&secret.x25519_keypair.public;
 
         let cert_subject_der = yasna::construct_der(|writer| {
             writer.write_sequence(|writer| {

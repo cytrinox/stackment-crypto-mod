@@ -24,10 +24,10 @@ use crate::crypto::SignatureBytes;
 /// Trait for public key information
 pub trait PublicKeyring {
     /// Returns the public signing key as raw bytes
-    fn signing_public_key(&self) -> &[u8];
+    fn signing_key(&self) -> &[u8];
 
     /// Returns the public encryption key as raw bytes
-    fn encryption_public_key(&self) -> &[u8];
+    fn encryption_key(&self) -> &[u8];
 
     /// Verify raw bytes data and a signature against this public key
     fn verify(&self, bytes: &[u8], signature: &SignatureBytes) -> bool;
@@ -51,7 +51,7 @@ pub trait SecretKeyring {
     fn serialize(&self, stream: &mut dyn Write);
 
     /// Get public key
-    fn public_key(&self) -> &dyn PublicKeyring;
+    fn public_keyring(&self) -> &dyn PublicKeyring;
 }
 
 /// Holds the encrypted data and peer's ephemeral public key.

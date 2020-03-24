@@ -22,22 +22,23 @@ mod tests {
         let isec: Box<dyn SecretKeyring> = Box::from(AlphaSecretKeyring::new());
         let data = vec![0x34, 0x84, 0x23, 0x98, 0xA2];
         let sig = isec.sign(&data);
-        assert_eq!(isec.public_key().verify(&data, &sig), true);
+        assert_eq!(isec.public_keyring().verify(&data, &sig), true);
         let data = vec![0x01, 0x02, 0x03];
-        assert_eq!(isec.public_key().verify(&data, &sig), false);
+        assert_eq!(isec.public_keyring().verify(&data, &sig), false);
     }
 
     #[test]
     fn encrypt_and_decrypt() {
         let isec: Box<dyn SecretKeyring> = Box::from(AlphaSecretKeyring::new());
         let plain = vec![0x34, 0x84, 0x23, 0x98, 0xA2];
-        let crypted = isec.public_key().encrypt(&plain, isec.as_ref());
-        assert_eq!(isec.decrypt(&crypted, isec.public_key()), plain);
+        let crypted = isec.public_keyring().encrypt(&plain, isec.as_ref());
+        assert_eq!(isec.decrypt(&crypted, isec.public_keyring()), plain);
     }
 
     #[test]
     fn save_and_restore_secret() {
         let isec: Box<dyn SecretKeyring> = Box::from(AlphaSecretKeyring::new());
+        // TODO
     }
 
     #[test]
