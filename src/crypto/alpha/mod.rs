@@ -31,7 +31,7 @@ mod tests {
     fn encrypt_and_decrypt() {
         let isec: Box<dyn SecretKeyring> = Box::from(AlphaSecretKeyring::new());
         let plain = vec![0x34, 0x84, 0x23, 0x98, 0xA2];
-        let crypted = isec.encrypt(&plain, isec.public_key());
+        let crypted = isec.public_key().encrypt(&plain, isec.as_ref());
         assert_eq!(isec.decrypt(&crypted, isec.public_key()), plain);
     }
 

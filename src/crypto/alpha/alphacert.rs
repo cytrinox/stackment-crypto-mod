@@ -22,8 +22,8 @@ use yasna::{self, models::GeneralizedTime, models::ObjectIdentifier, Tag};
 use super::alphasecret::AlphaSecretKeyring;
 
 use crate::crypto::{
-    validate_signature, Cert, DeviceCert, Fingerprint, IdentCert, PublicKeyring, SecretKeyring, Trusted,
-    Untrusted,
+    validate_signature, Cert, DeviceCert, Fingerprint, IdentCert, PublicKeyring, SecretKeyring,
+    Trusted, Untrusted,
 };
 
 /// Alpha certificate
@@ -270,5 +270,4 @@ impl Cert for AlphaCert {
     fn as_bytes(&self) -> &[u8] {
         self.raw.as_slice()
     }
-
 }

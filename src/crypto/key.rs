@@ -19,11 +19,7 @@ use ring::{
 use snow;
 use yasna::{self, models::GeneralizedTime, models::ObjectIdentifier, Tag};
 
-use crate::crypto::{SecretVariant, PublicVariant, CertVariant};
-
-
 use crate::crypto::SignatureBytes;
-
 
 /// Trait for public key information
 pub trait PublicKeyring {
@@ -36,8 +32,10 @@ pub trait PublicKeyring {
     /// Verify raw bytes data and a signature against this public key
     fn verify(&self, bytes: &[u8], signature: &SignatureBytes) -> bool;
 
-    /// Returns the concrete variant reference
-    fn as_variant_ref(&self) -> PublicVariant;
+    /// Encrypt and sign plaintext bytes
+    /// Encryption is done with `self` as public key (receiver) and signing
+    /// is done with `sender_secret`.
+    fn encrypt(&self, plain_bytes: &[u8], sender_secret: &dyn SecretKeyring) -> Encrypted;
 }
 
 /// Trait for secret key information
@@ -52,15 +50,9 @@ pub trait SecretKeyring {
     /// The concrete format is up to the implementor.
     fn serialize(&self, stream: &mut dyn Write);
 
-    /// Encrypt and sign plaintext bytes
-    /// Signing requires the secret key, so this is why encrypt() is not provided
-    /// by the PublicKeyring trait but by the Secret trait.
-    fn encrypt(&self, plain_bytes: &[u8], peer_public: &dyn PublicKeyring) -> Encrypted;
-
     /// Get public key
     fn public_key(&self) -> &dyn PublicKeyring;
 }
-
 
 /// Holds the encrypted data and peer's ephemeral public key.
 /// TODO: An ephemeral key is specific to the implemention of the alpha variant.

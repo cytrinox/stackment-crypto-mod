@@ -49,17 +49,6 @@ pub enum Error {
 
 pub type Result<T> = std::result::Result<T, Error>;
 
-pub enum CertVariant<'a> {
-    Alpha(&'a self::alpha::AlphaCert),
-}
-
-pub enum SecretVariant<'a> {
-    Alpha(&'a self::alpha::AlphaSecretKeyring),
-}
-
-pub enum PublicVariant<'a> {
-    Alpha(&'a self::alpha::AlphaPublicKeyring),
-}
 
 pub struct Trusted;
 pub struct Untrusted;
