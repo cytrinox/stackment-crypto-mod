@@ -66,5 +66,6 @@ pub trait SecretKeyring {
 /// TODO: An ephemeral key is specific to the implemention of the alpha variant.
 pub struct Encrypted {
     pub ephemeral_pubkey: Vec<u8>,
+    pub ephemeral_pubkey_signature: SignatureBytes,
     pub data: Vec<u8>,
 }

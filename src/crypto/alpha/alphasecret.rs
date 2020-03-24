@@ -21,8 +21,8 @@ use yasna::{self, models::GeneralizedTime, models::ObjectIdentifier, Tag};
 
 use x25519_dalek as x25519;
 
-use rand::Rng;
 use rand::rngs::OsRng;
+use rand::Rng;
 
 use crate::crypto::{CertVariant, PublicVariant, SecretVariant};
 
@@ -30,8 +30,8 @@ type Seed = [u8; SEED_LEN];
 const SEED_LEN: usize = 32;
 
 use crate::crypto::{
-    validate_signature, Cert, DeviceCert, Encrypted, Fingerprint, IdentCert, PublicKeyring, SecretKeyring,
-    SignatureBytes, Trusted, Untrusted,
+    validate_signature, Cert, DeviceCert, Encrypted, Fingerprint, IdentCert, PublicKeyring,
+    SecretKeyring, SignatureBytes, Trusted, Untrusted,
 };
 
 /// Public part of a Alpha keyring, consists of:
@@ -78,8 +78,6 @@ impl AlphaSecretKeyring {
             },
         }
     }
-
-
 }
 
 impl SecretKeyring for AlphaSecretKeyring {
@@ -88,43 +86,44 @@ impl SecretKeyring for AlphaSecretKeyring {
     }
 
     fn decrypt(&self, enc_bytes: &Encrypted, sender_pubkey: &dyn PublicKeyring) -> Vec<u8> {
-        match sender_pubkey.as_variant_ref() {
-            PublicVariant::Alpha(_p) => {
-                let mut in_out = enc_bytes.data.clone();
-                let mut raw_ephemeral_pubkey = [0; 32];
-                let bytes = &enc_bytes.ephemeral_pubkey[..raw_ephemeral_pubkey.len()];
-                raw_ephemeral_pubkey.copy_from_slice(bytes);
-                let ephemeral_pub = x25519::PublicKey::from(raw_ephemeral_pubkey);
-                // DH
-                let shared_secret = self.x25519_secret.diffie_hellman(&ephemeral_pub);
-
-                let salt = [0];
-
-                let mut kdf_input = Vec::new();
-                kdf_input.extend(shared_secret.as_bytes());
-                kdf_input.extend(ephemeral_pub.as_bytes());
-                kdf_input.extend(self.public_key().encryption_public_key());
-                let mut key = [0; 32];
-                pbkdf2::derive(
-                    pbkdf2::PBKDF2_HMAC_SHA256,
-                    std::num::NonZeroU32::new(1000).unwrap(),
-                    &salt,
-                    &kdf_input,
-                    &mut key,
-                );
-
-                let mut opening_key = aead::LessSafeKey::new(
-                    aead::UnboundKey::new(&aead::CHACHA20_POLY1305, &key).expect("opening key"),
-                );
-
-                let nonce =
-                    aead::Nonce::assume_unique_for_key([0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1]);
-                let decrypted_data = opening_key
-                    .open_in_place(nonce, aead::Aad::empty(), &mut in_out)
-                    .expect("opening failed");
-                Vec::from(decrypted_data)
-            }
+        // Encrypted data must carry a copy of the used ephemeral public key, signed
+        // by the sender static public key.
+        if !sender_pubkey.verify(&enc_bytes.ephemeral_pubkey, &enc_bytes.ephemeral_pubkey_signature) {
+            panic!();
         }
+
+        let mut in_out = enc_bytes.data.clone();
+        let mut raw_ephemeral_pubkey = [0; 32];
+        let bytes = &enc_bytes.ephemeral_pubkey[..raw_ephemeral_pubkey.len()];
+        raw_ephemeral_pubkey.copy_from_slice(bytes);
+        let ephemeral_pub = x25519::PublicKey::from(raw_ephemeral_pubkey);
+        // DH
+        let shared_secret = self.x25519_secret.diffie_hellman(&ephemeral_pub);
+
+        let salt = [0];
+
+        let mut kdf_input = Vec::new();
+        kdf_input.extend(shared_secret.as_bytes());
+        kdf_input.extend(ephemeral_pub.as_bytes());
+        kdf_input.extend(self.public_key().encryption_public_key());
+        let mut key = [0; 32];
+        pbkdf2::derive(
+            pbkdf2::PBKDF2_HMAC_SHA256,
+            std::num::NonZeroU32::new(1000).unwrap(),
+            &salt,
+            &kdf_input,
+            &mut key,
+        );
+
+        let mut opening_key = aead::LessSafeKey::new(
+            aead::UnboundKey::new(&aead::CHACHA20_POLY1305, &key).expect("opening key"),
+        );
+
+        let nonce = aead::Nonce::assume_unique_for_key([0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1]);
+        let decrypted_data = opening_key
+            .open_in_place(nonce, aead::Aad::empty(), &mut in_out)
+            .expect("opening failed");
+        Vec::from(decrypted_data)
     }
 
     fn encrypt(&self, plain_bytes: &[u8], peer_public: &dyn PublicKeyring) -> Encrypted {
@@ -167,8 +166,12 @@ impl SecretKeyring for AlphaSecretKeyring {
                 sealing_key
                     .seal_in_place_append_tag(nonce, aead::Aad::empty(), &mut in_out)
                     .expect("sealing failed");
+                // Sign the ephemeral public key with the static public key.
+                let ephemeral_pubkey = Vec::from(&ephemeral_pub.as_bytes()[..]);
+                let ephemeral_pubkey_signature = self.sign(&ephemeral_pubkey);
                 Encrypted {
-                    ephemeral_pubkey: Vec::from(&ephemeral_pub.as_bytes()[..]),
+                    ephemeral_pubkey,
+                    ephemeral_pubkey_signature,
                     data: in_out,
                 }
             }
@@ -213,9 +216,7 @@ impl PublicKeyring for AlphaPublicKeyring {
 
     fn verify(&self, bytes: &[u8], signature: &SignatureBytes) -> bool {
         let public_key = UnparsedPublicKey::new(&signature::ED25519, self.signing_public_key());
-        public_key
-            .verify(bytes, signature.as_bytes())
-            .is_ok()
+        public_key.verify(bytes, signature.as_bytes()).is_ok()
     }
     fn as_variant_ref(&self) -> PublicVariant<'_> {
         PublicVariant::Alpha(self)
